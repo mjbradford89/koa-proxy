@@ -26,6 +26,8 @@ module.exports = function(options) {
         return yield* next;
       }
     }
+    
+    console.log('Path Matches, forwarding: ', this.path, ' to the api.');
 
     var parsedBody = getParsedBody(this);
 
