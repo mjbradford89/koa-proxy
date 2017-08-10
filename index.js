@@ -65,6 +65,10 @@ module.exports = function(options) {
       if (name === 'transfer-encoding') {
         continue;
       }
+      //don't set connection header
+      if (name === 'connection') {
+        continue;
+      }
       this.set(name, res.headers[name]);
     }
 
