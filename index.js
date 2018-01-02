@@ -4,7 +4,7 @@ var join = require('url').resolve;
 var iconv = require('iconv-lite');
 var coRequest = require('co-request');
 
-module.exports = function(options) {
+module.exports = function (options) {
   options || (options = {});
   var request = coRequest.defaults({ jar: options.jar === true });
 
@@ -15,15 +15,15 @@ module.exports = function(options) {
   return function* proxy(next) {
     var url = resolve(this.path, options);
 
-    if(typeof options.suppressRequestHeaders === 'object'){
-      options.suppressRequestHeaders.forEach(function(h, i){
+    if (typeof options.suppressRequestHeaders === 'object') {
+      options.suppressRequestHeaders.forEach(function (h, i) {
         options.suppressRequestHeaders[i] = h.toLowerCase();
       });
     }
 
     var suppressResponseHeaders = [];  // We should not be overwriting the options object!
-    if(typeof options.suppressResponseHeaders === 'object'){
-      options.suppressResponseHeaders.forEach(function(h, i){
+    if (typeof options.suppressResponseHeaders === 'object') {
+      options.suppressResponseHeaders.forEach(function (h, i) {
         suppressResponseHeaders.push(h.toLowerCase());
       });
     }
@@ -39,7 +39,7 @@ module.exports = function(options) {
         return yield* next;
       }
     }
-    
+
     var parsedBody = getParsedBody(this);
 
     var opt = {
@@ -52,7 +52,7 @@ module.exports = function(options) {
     };
 
     // set 'Host' header to options.host (without protocol prefix), strip trailing slash
-    if (options.host) opt.headers.host = options.host.slice(options.host.indexOf('://')+3).replace(/\/$/,'');
+    if (options.host) opt.headers.host = options.host.slice(options.host.indexOf('://') + 3).replace(/\/$/, '');
 
     if (options.requestOptions) {
       if (typeof options.requestOptions === 'function') {
@@ -70,8 +70,8 @@ module.exports = function(options) {
       }
     }
 
-    for(name in opt.headers){
-      if(options.suppressRequestHeaders && options.suppressRequestHeaders.indexOf(name.toLowerCase()) >= 0){
+    for (name in opt.headers) {
+      if (options.suppressRequestHeaders && options.suppressRequestHeaders.indexOf(name.toLowerCase()) >= 0) {
         delete opt.headers[name];
       }
     }
@@ -89,13 +89,17 @@ module.exports = function(options) {
     this.status = res.statusCode;
     for (var name in res.headers) {
       // http://stackoverflow.com/questions/35525715/http-get-parse-error-code-hpe-unexpected-content-length
-      if(suppressResponseHeaders.indexOf(name.toLowerCase())>=0){
+      if (suppressResponseHeaders.indexOf(name.toLowerCase()) >= 0) {
         continue;
       }
       if (name === 'transfer-encoding') {
         continue;
       }
-      this.set(name, res.headers[name]);
+      if (options.setHeaderOptions) {
+        this.set(name, options.setHeaderOptions(name, res.headers[name]));
+      } else {
+        this.set(name, res.headers[name]);
+      }
     }
 
     if (options.encoding === 'gbk') {
@@ -136,14 +140,14 @@ function ignoreQuery(url) {
   return url ? url.split('?')[0] : null;
 }
 
-function getParsedBody(ctx){
+function getParsedBody(ctx) {
   var body = ctx.request.body;
-  if (body === undefined || body === null){
+  if (body === undefined || body === null) {
     return undefined;
   }
   var contentType = ctx.request.header['content-type'];
-  if (!Buffer.isBuffer(body) && typeof body !== 'string'){
-    if (contentType && contentType.indexOf('json') !== -1){
+  if (!Buffer.isBuffer(body) && typeof body !== 'string') {
+    if (contentType && contentType.indexOf('json') !== -1) {
       body = JSON.stringify(body);
     } else {
       body = body + '';
@@ -152,8 +156,8 @@ function getParsedBody(ctx){
   return body;
 }
 
-function pipeRequest(readable, requestThunk){
-  return function(cb){
+function pipeRequest(readable, requestThunk) {
+  return function (cb) {
     readable.pipe(requestThunk(cb));
   }
 }
